@@ -3,7 +3,7 @@
 ## Installation
 
 ```
-conda env create -f environments.yml
+conda env create -f environment.yml
 ```
 
 ## Getting Started
