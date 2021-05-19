@@ -46,10 +46,24 @@ class AcrobotSim:
 
         return xdot
 
-    def discrete_dynamics(self, x, u):
-        xdot = self.continuous_dynamics(x, u)
-        x_next = x + xdot * self.dt
+    def discrete_dynamics(self, x, u, use_rk4 = True):
+        if use_rk4:
+            x_next = self.rk4(x,u)
+        else:
+            xdot = self.continuous_dynamics(x, u)
+            x_next = x + xdot * self.dt
         return x_next
+
+    def rk4(self, x, u):
+        dt = self.dt
+        dt2 = dt / 2.0
+        k1 = self.continuous_dynamics(x, u)
+        k2 = self.continuous_dynamics(x+dt2 * k1, u)
+        k3 = self.continuous_dynamics(x+dt2 * k2, u)
+        k4 = self.continuous_dynamics(x+dt * k3, u)
+        x_next = x + dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+        return x_next
+    
 
     def continuous_dynamics_sym(self, x, u):
         m1, m2, l1, l2 = self.design
@@ -87,9 +101,22 @@ class AcrobotSim:
 
         return xdot
 
-    def discrete_dynamics_sym(self, x, u):
-        xdot = self.continuous_dynamics_sym(x, u)
-        x_next = x + xdot * self.dt
+    def discrete_dynamics_sym(self, x, u, use_rk4 = True):
+        if use_rk4:
+            x_next = self.rk4_sym(x,u)
+        else:   
+            xdot = self.continuous_dynamics_sym(x, u)
+            x_next = x + xdot * self.dt
+        return x_next
+
+    def rk4_sym(self,x,u):
+        dt = self.dt
+        dt2 = dt / 2.0
+        k1 = self.continuous_dynamics_sym(x, u)
+        k2 = self.continuous_dynamics_sym(x+dt2 * k1, u)
+        k3 = self.continuous_dynamics_sym(x+dt2 * k2, u)
+        k4 = self.continuous_dynamics_sym(x+dt * k3, u)
+        x_next = x + dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
         return x_next
 
     def rollout(self, x0, u_trj):
