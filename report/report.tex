@@ -46,6 +46,24 @@ Co-optimizing, Acrobot, Pendulum, iLQR
 \end{IEEEkeywords}
 
 
+\section{Introduction}
+
+For a robot to achieve certain tasks successfully, we all know that control is important, but the design (i.e. structure) of the robot is important as well. So we want to simultaneously optimize for robot's control and design to figure out what's the best design of the robot for a given task and also the corresponding optimal policy for that design. The design of a robot along with its control determines the optimal performance for the robot to achieve certain tasks. But most of the previous works focus on improving robot control while the design optimization of robots is relatively less explored. Therefore, given certain tasks, we want to co-optimize both the design and the control of robots to achieve better performance than hand-designed robots. It would be also interesting to see how the optimal designs of robots look like and what insights we can get from the optimization.
+
+
+
+\section{Related work}
+
+
+
+\cite{spielberg2017functional} co-optimizes the design parameters of a robot and its trajectories.
+\cite{ha2019reinforcement} explores a similar idea but uses DRL for control, and has the potential to work on more complex tasks.
+\cite{amos2018differentiable} provides a differentiable way to system identification, where the method matches the co-optimizing requirement as well.
+
+
+\section{Problem formulation}
+
+
 \section{Project Update \#1}
 
 \subsection{Approach 1: Discretization}
@@ -205,7 +223,7 @@ Here $\ell_f(\vx[N]) = \norm{\vx[n] - \vx_{\rm target}}^2$ is the final loss, $\
     \item Program the dynamics for acrobot using AutodiffXd under design parameter $\varphi$.
     \item Specify the costs, $Q_{\rm terms}$, $V_{\rm terms}$, forward, backword pass.
 \end{itemize}
-\begin{figure}[H]
+\begin{figure}[!h]
 \label{fig:phi}
 \centering
 \includegraphics[width=.5\textwidth]{forward_phi.png}
@@ -216,6 +234,8 @@ With all this, for any design paramter $\varphi$, we can find the optimal trajec
 
 The experiment is on: \url{https://colab.research.google.com/drive/123VmnYlPXSXiouedK_vBS2VpI8zld_VG?usp=sharing}
 
+
+\section{Discussion and future works}
 
 
 
