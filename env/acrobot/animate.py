@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 
 
-def animate(design, x_trj, frames=50):
+def animate_acrobot(design, x_trj, frames=50):
 
     fig, ax = plt.subplots()
     ax.set_xlim((-3, 3))
@@ -32,4 +32,4 @@ if __name__ == '__main__':
     
     design = [1, 2, 1, 2]
     x_trj = np.random.random((50, 4))
-    animate(design, x_trj)
+    animate_acrobot(design, x_trj)

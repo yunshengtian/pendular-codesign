@@ -42,24 +42,3 @@ class AcrobotEnv(gym.Env):
         self.n = 0
         return self.x
 
-
-if __name__ == '__main__':
-
-    design = np.array([1, 2, 1, 2])
-    x_init = np.array([0.9 * np.pi, 0, 0, 0])
-    x_target = np.array([np.pi, 0, 0, 0])
-    N = 50
-
-    env = gym.make('acrobot-v0')
-    env.init(design, x_init, x_target, N)
-    env.reset()
-
-    x_trj = []
-    done = False
-    while not done:
-        u = np.random.random(1,)
-        x, reward, done, _ = env.step(u)
-        x_trj.append(x)
-
-    from animate import animate
-    animate(design, x_trj)

@@ -54,7 +54,7 @@ class ILQR:
 
     def __init__(self, env):
         self.env = env
-        self.n_x, self.n_u = 4, 1
+        self.n_x, self.n_u = self.env.observation_space.shape[0], self.env.action_space.shape[0]
         self.derivs = Derivatives(
             self.env.sim.discrete_dynamics_sym, 
             self.env.cost.cost_stage, 
@@ -112,9 +112,12 @@ class ILQR:
             expected_cost_redu += self.expected_cost_reduction(Q_u, Q_uu, k)
         return k_trj, K_trj, expected_cost_redu
 
-    def run_ilqr(self, x0, N, max_iter=50, regu_init=100):
+    def run_ilqr(self, x0, N, max_iter=50, regu_init=100, u_trj_init=None):
         # First forward rollout
-        u_trj = np.random.randn(N-1, self.n_u)*0.0001
+        if u_trj_init is None:
+            u_trj = np.random.randn(N-1, self.n_u)*0.0001
+        else:
+            u_trj = u_trj_init
         x_trj = self.env.sim.rollout(x0, u_trj)
         total_cost = self.env.cost.cost_rollout(x_trj, u_trj)
         regu = regu_init
@@ -160,8 +163,8 @@ class ILQR:
 
         return x_trj, u_trj, cost_trace, regu_trace, redu_ratio_trace, redu_trace
 
-    def solve(self, x0, N, max_iter=50, regu_init=100):
-        x_trj, u_trj, cost_trace, _, _, _ = self.run_ilqr(x0, N, max_iter, regu_init)
+    def solve(self, x0, N, max_iter=50, regu_init=100, u_trj_init=None):
+        x_trj, u_trj, cost_trace, _, _, _ = self.run_ilqr(x0, N, max_iter, regu_init, u_trj_init=u_trj_init)
         return x_trj, u_trj, cost_trace
 
 
@@ -173,22 +176,51 @@ if __name__ == '__main__':
     import gym
     import matplotlib.pyplot as plt
 
-    design = np.array([1, 2, 1, 2])
-    x_init = np.array([0.98 * np.pi, 0, 0, 0])
-    x_target = np.array([np.pi, 0, 0, 0])
-    N = 100
-    dt = 0.05
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument('--env', type=str, default='acrobot', choices=['acrobot', 'pendulum'])
+    args = parser.parse_args()
 
-    env = gym.make('acrobot-v0', design=design, x_init=x_init, x_target=x_target, N=N, dt=dt)
+    if args.env == 'acrobot':
 
-    ilqr = ILQR(env)
-    x_trj, u_trj, cost_trace = ilqr.solve(x_init, N, max_iter=200)
+        design = np.array([1, 2, 1, 2])
+        x_init = np.array([0.95 * np.pi, 0, 0, 0])
+        x_target = np.array([np.pi, 0, 0, 0])
+        N = 100
+        dt = 0.05
 
-    plt.plot(list(range(len(cost_trace))), cost_trace)
-    plt.title('Cost')
-    plt.show()
+        env = gym.make('acrobot-v0', design=design, x_init=x_init, x_target=x_target, N=N, dt=dt)
 
-    print(f'Final cost: {cost_trace[-1]}')
+        ilqr = ILQR(env)
+        x_trj, u_trj, cost_trace = ilqr.solve(x_init, N, max_iter=50)
 
-    from animate import animate
-    animate(design, x_trj, N)
+        plt.plot(list(range(len(cost_trace))), cost_trace)
+        plt.title('Cost')
+        plt.show()
+
+        print(f'Final cost: {cost_trace[-1]}')
+
+        from env.acrobot.animate import animate_acrobot
+        animate_acrobot(design, x_trj, N)
+
+    elif args.env == 'pendulum':
+        
+        design = np.array([1, 2])
+        x_init = np.array([0 * np.pi, 0])
+        x_target = np.array([np.pi, 0])
+        N = 100
+        dt = 0.05
+
+        env = gym.make('pendulum-v0', design=design, x_init=x_init, x_target=x_target, N=N, dt=dt)
+
+        ilqr = ILQR(env)
+        x_trj, u_trj, cost_trace = ilqr.solve(x_init, N, max_iter=50)
+
+        plt.plot(list(range(len(cost_trace))), cost_trace)
+        plt.title('Cost')
+        plt.show()
+
+        print(f'Final cost: {cost_trace[-1]}')
+
+        from env.pendulum.animate import animate_pendulum
+        animate_pendulum(design, x_trj, N)
