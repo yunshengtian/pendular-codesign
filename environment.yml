@@ -2,18 +2,10 @@ name: '6.832'
 channels:
   - defaults
 dependencies:
-  - ca-certificates=2021.4.13
-  - certifi=2020.12.5
-  - libcxx=10.0.0
-  - libedit=3.1.20210216
-  - libffi=3.2.1
-  - ncurses=6.2
-  - openssl=1.0.2u
   - pip=21.0.1
   - python=3.7.0
   - readline=7.0
   - setuptools=52.0.0
-  - sqlite=3.33.0
   - tk=8.6.10
   - wheel=0.36.2
   - xz=5.2.5
