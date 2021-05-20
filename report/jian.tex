@@ -1,0 +1,262 @@
+\usepackage{enumerate}  %枚举的符号
+\usepackage{geometry}   %页面形式
+\usepackage{fancyhdr}   % 设置页眉
+\usepackage{xcolor} %颜色
+\usepackage{listings}   %插入代码
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{longtable}  %长表格
+\usepackage[all,cmtip]{xy}  %交换图
+\usepackage{pgf,tikz}   %自动机画图
+\usetikzlibrary{shapes,arrows,automata}
+\usepackage{graphicx}
+
+% \usepackage{algorithm}  %算法
+% \usepackage{algpseudocode}
+\usepackage{graphics}
+\usepackage{epsfig}
+%算法中用\require， \ensure写input，output
+% \renewcommand{\algorithmicrequire}{\textbf{Input:}} % Use Input in the format of Algorithm
+% \renewcommand{\algorithmicensure}{\textbf{Output:}} % Use Output in the format of Algorithm
+% \newcommand{\algorithmiclastcon}{\textbf{Initialize:}}
+% \newcommand{\Initialize}{\item[\algorithmiclastcon]}
+
+\usepackage{framed} %给文字加框
+
+\usepackage{bm} %给数学公式中的符号加粗
+\usepackage{bbm}
+
+\usepackage{yhmath} %把\Widehat命令设为自动调整大小的hat符号
+\DeclareSymbolFont{largesymbol}{OMX}{yhex}{m}{n}
+\DeclareMathAccent{\Widehat}{\mathord}{largesymbol}{"62}
+
+\renewcommand\tablename{Table}  %设置图表的名字
+\renewcommand\figurename{Figure}
+% \CTEXoptions[today=old] %设置日期为英文
+\renewcommand\refname{Reference}    % 设置参考文献为英文
+
+\setlength{\parindent}{0pt} %设置不缩进
+\linespread{1}  % 改变行距
+
+% \usepackage[T1]{fontenc} %  textsc
+\usepackage{xspace}
+\usepackage{enumitem}
+
+\usepackage{todonotes}
+
+\usepackage{multirow}
+\usepackage{booktabs}
+
+
+
+
+
+\newtheorem{problem}{Problem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{property}{Property}
+\newtheorem{assumption}{Assumption}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem*{exercise}{Exercise}
+\newtheorem*{remark}{Remark}
+\newtheorem*{observation}{Observation}
+\newtheorem*{example}{Example}
+\newtheorem*{solution}{Solution}
+\newtheorem*{notation}{Notation}
+\newtheorem*{question}{Question}
+% \newtheorem*{conjecture}{Conjecture}
+
+
+% notations
+\newcommand{\wt}[1]{\widetilde{#1}}
+\newcommand{\h}[1]{\Widehat{#1}}
+\renewcommand{\o}[1]{\overline{#1}}
+\renewcommand{\u}[1]{\underline{#1}}
+\newcommand{\s}[1]{\sqrt{#1}}
+\renewcommand{\d}{\textnormal{d}}
+\newcommand{\tto}{\Rightarrow}
+
+
+% formatting
+\newcommand\blankline{~\\}
+
+
+
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\cB}{\mathcal{B}}
+\newcommand{\cC}{\mathcal{C}}
+\newcommand{\cD}{\mathcal{D}}
+\newcommand{\cE}{\mathcal{E}}
+\newcommand{\cF}{\mathcal{F}}
+\newcommand{\cG}{\mathcal{G}}
+\newcommand{\cH}{\mathcal{H}}
+\newcommand{\cI}{\mathcal{I}}
+\newcommand{\cJ}{\mathcal{J}}
+\newcommand{\cK}{\mathcal{K}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\cM}{\mathcal{M}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\cO}{\mathcal{O}}
+\newcommand{\cP}{\mathcal{P}}
+\newcommand{\cQ}{\mathcal{Q}}
+\newcommand{\cR}{\mathcal{R}}
+\newcommand{\cS}{\mathcal{S}}
+\newcommand{\cT}{\mathcal{T}}
+\newcommand{\cU}{\mathcal{U}}
+\newcommand{\cV}{\mathcal{V}}
+\newcommand{\cW}{\mathcal{W}}
+\newcommand{\cX}{\mathcal{X}}
+\newcommand{\cY}{\mathcal{Y}}
+\newcommand{\cZ}{\mathcal{Z}}
+
+
+
+
+\newcommand{\bA}{\mathbb{A}}
+\newcommand{\bB}{\mathbb{B}}
+\newcommand{\bC}{\mathbb{C}}
+\newcommand{\bD}{\mathbb{D}}
+\newcommand{\bE}{\mathbb{E}}
+\newcommand{\bF}{\mathbb{F}}
+\newcommand{\bG}{\mathbb{G}}
+\newcommand{\bH}{\mathbb{H}}
+\newcommand{\bI}{\mathbb{I}}
+\newcommand{\bJ}{\mathbb{J}}
+\newcommand{\bK}{\mathbb{K}}
+\newcommand{\bL}{\mathbb{L}}
+\newcommand{\bM}{\mathbb{M}}
+\newcommand{\bN}{\mathbb{N}}
+\newcommand{\bO}{\mathbb{O}}
+\newcommand{\bP}{\mathbb{P}}
+\newcommand{\bQ}{\mathbb{Q}}
+\newcommand{\bR}{\mathbb{R}}
+\newcommand{\bS}{\mathbb{S}}
+\newcommand{\bT}{\mathbb{T}}
+\newcommand{\bU}{\mathbb{U}}
+\newcommand{\bV}{\mathbb{V}}
+\newcommand{\bW}{\mathbb{W}}
+\newcommand{\bX}{\mathbb{X}}
+\newcommand{\bY}{\mathbb{Y}}
+\newcommand{\bZ}{\mathbb{Z}}
+
+
+
+
+\newcommand{\va}{\mathbf{a}}
+\newcommand{\vb}{\mathbf{b}}
+\newcommand{\vc}{\mathbf{c}}
+\newcommand{\vd}{\mathbf{d}}
+\newcommand{\ve}{\mathbf{e}}
+\newcommand{\vf}{\mathbf{f}}
+\newcommand{\vg}{\mathbf{g}}
+\newcommand{\vh}{\mathbf{h}}
+\newcommand{\vi}{\mathbf{i}}
+\newcommand{\vj}{\mathbf{j}}
+\newcommand{\vk}{\mathbf{k}}
+\newcommand{\vl}{\mathbf{l}}
+\newcommand{\vm}{\mathbf{m}}
+\newcommand{\vn}{\mathbf{n}}
+\newcommand{\vo}{\mathbf{o}}
+\newcommand{\vp}{\mathbf{p}}
+\newcommand{\vq}{\mathbf{q}}
+\newcommand{\vr}{\mathbf{r}}
+\newcommand{\vs}{\mathbf{s}}
+\newcommand{\vt}{\mathbf{t}}
+\newcommand{\vu}{\mathbf{u}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\vw}{\mathbf{w}}
+\newcommand{\vx}{\mathbf{x}}
+\newcommand{\vy}{\mathbf{y}}
+\newcommand{\vz}{\mathbf{z}}
+
+
+
+
+\newcommand{\vA}{\mathbf{A}}
+\newcommand{\vB}{\mathbf{B}}
+\newcommand{\vC}{\mathbf{C}}
+\newcommand{\vD}{\mathbf{D}}
+\newcommand{\vE}{\mathbf{E}}
+\newcommand{\vF}{\mathbf{F}}
+\newcommand{\vG}{\mathbf{G}}
+\newcommand{\vH}{\mathbf{H}}
+\newcommand{\vI}{\mathbf{I}}
+\newcommand{\vJ}{\mathbf{J}}
+\newcommand{\vK}{\mathbf{K}}
+\newcommand{\vL}{\mathbf{L}}
+\newcommand{\vM}{\mathbf{M}}
+\newcommand{\vN}{\mathbf{N}}
+\newcommand{\vO}{\mathbf{O}}
+\newcommand{\vP}{\mathbf{P}}
+\newcommand{\vQ}{\mathbf{Q}}
+\newcommand{\vR}{\mathbf{R}}
+\newcommand{\vS}{\mathbf{S}}
+\newcommand{\vT}{\mathbf{T}}
+\newcommand{\vU}{\mathbf{U}}
+\newcommand{\vV}{\mathbf{V}}
+\newcommand{\vW}{\mathbf{W}}
+\newcommand{\vX}{\mathbf{X}}
+\newcommand{\vY}{\mathbf{Y}}
+\newcommand{\vZ}{\mathbf{Z}}
+
+\newcommand{\set}[1]{\{#1\}}
+\newcommand{\Set}[1]{\left\{#1\right\}}
+\newcommand{\inner}[1]{\langle#1\rangle}
+\newcommand{\Inner}[1]{\left\langle#1\right\rangle}
+\newcommand{\Var}{\textnormal{Var}}
+\newcommand{\abs}[1]{\lvert#1\rvert}
+\newcommand{\Abs}[1]{\left\lvert#1\right\rvert}
+\newcommand{\norm}[1]{\left\|{#1}\right\|}
+\newcommand{\Ot}{\widetilde{O}}
+
+
+\newcommand{\bigSet}[1]{\bigl\{#1\bigr\}}
+\newcommand{\BigSet}[1]{\Bigl\{#1\Bigr\}}
+\newcommand{\braces}[1]{\{#1\}}
+\newcommand{\Braces}[1]{\left\{#1\right\}}
+\newcommand{\bigBraces}[1]{\bigl\{#1\bigr\}}
+\newcommand{\BigBraces}[1]{\Bigl\{#1\Bigr\}}
+\newcommand{\bracks}[1]{[#1]}
+\newcommand{\Bracks}[1]{\left[#1\right]}
+\newcommand{\bigBracks}[1]{\bigl[#1\bigr]}
+\newcommand{\BigBracks}[1]{\Bigl[#1\Bigr]}
+\newcommand{\biggBracks}[1]{\biggl[#1\biggr]}
+\newcommand{\BiggBracks}[1]{\Biggl[#1\Biggr]}
+\newcommand{\parens}[1]{(#1)}
+\newcommand{\Parens}[1]{\left(#1\right)}
+\newcommand{\bigParens}[1]{\bigl(#1\bigr)}
+\newcommand{\BigParens}[1]{\Bigl(#1\Bigr)}
+\newcommand{\biggParens}[1]{\biggl(#1\biggr)}
+\newcommand{\BiggParens}[1]{\Biggl(#1\Biggr)}
+\newcommand{\given}{\mathbin{\vert}}
+\newcommand{\bigGiven}{\mathbin{\bigm\vert}}
+\newcommand{\BigGiven}{\mathbin{\Bigm\vert}}
+\newcommand{\biggGiven}{\mathbin{\biggm\vert}}
+
+% \newcommand{\Mat}[1]{\begin\{pmatrix\}#1\end\{pmatrix\}}
+
+
+\newcommand{\eps}{\epsilon}
+\newcommand{\veps}{\varepsilon}
+
+
+\newcommand{\wrong}[1]{\textcolor{red}{#1}}
+\newcommand{\good}[1]{\textcolor{blue}{#1}}
+
+
+
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\Ent}{\mathrm{Ent}}
+\newcommand{\ERM}{\mathrm{ERM}}
+\newcommand{\diam}{\mathrm{diam}}
+\newcommand{\card}{\mathrm{card}}
+\newcommand{\Unif}{\mathrm{Unif}}
+\newcommand{\TV}{\mathrm{TV}}
