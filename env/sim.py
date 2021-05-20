@@ -11,6 +11,9 @@ class Sim:
         self.dt = dt
         self.use_rk4 = use_rk4
 
+    def get_design_params(self, design):
+        return design
+
     def set_design(self, design):
         self.design = design
 

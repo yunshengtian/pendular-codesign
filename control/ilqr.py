@@ -3,6 +3,8 @@ import symengine as se
 from tqdm import tqdm
 from time import time
 
+from .config import config
+
 
 class Derivatives:
     
@@ -52,8 +54,15 @@ class Derivatives:
 
 class ILQR:
 
-    def __init__(self, env):
+    def __init__(self, env, max_iter=None, regu_init=None, u_init_sigma=None):
+
         self.env = env
+
+        control_config = config['ilqr']
+        self.max_iter = control_config['max_iter'] if max_iter is None else max_iter
+        self.regu_init = control_config['regu_init'] if regu_init is None else regu_init
+        self.u_init_sigma = control_config['u_init_sigma'] if u_init_sigma is None else u_init_sigma
+
         self.n_x, self.n_u = self.env.observation_space.shape[0], self.env.action_space.shape[0]
         self.derivs = Derivatives(
             self.env.sim.discrete_dynamics_sym, 
@@ -112,15 +121,16 @@ class ILQR:
             expected_cost_redu += self.expected_cost_reduction(Q_u, Q_uu, k)
         return k_trj, K_trj, expected_cost_redu
 
-    def run_ilqr(self, x0, N, max_iter=50, regu_init=100, u_trj_init=None):
+    def run_ilqr(self, u_trj_init=None):
         # First forward rollout
         if u_trj_init is None:
-            u_trj = np.random.randn(N-1, self.n_u)*0.0001
+            N = self.env.spec.max_episode_steps
+            u_trj = np.random.randn(N - 1, self.n_u) * self.u_init_sigma
         else:
             u_trj = u_trj_init
-        x_trj = self.env.sim.rollout(x0, u_trj)
+        x_trj = self.env.sim.rollout(self.env.x_init, u_trj)
         total_cost = self.env.cost.cost_rollout(x_trj, u_trj)
-        regu = regu_init
+        regu = self.regu_init
         max_regu = 10000
         min_regu = 0.01
 
@@ -132,7 +142,7 @@ class ILQR:
         regu_trace = [regu]
 
         # Run main loop
-        for it in tqdm(range(max_iter), desc='iLQR'):
+        for it in tqdm(range(self.max_iter), desc='iLQR'):
             # Backward and forward pass
             k_trj, K_trj, expected_cost_redu = self.backward_pass(x_trj, u_trj, regu)
             x_trj_new, u_trj_new = self.forward_pass(x_trj, u_trj, k_trj, K_trj)
@@ -163,64 +173,6 @@ class ILQR:
 
         return x_trj, u_trj, cost_trace, regu_trace, redu_ratio_trace, redu_trace
 
-    def solve(self, x0, N, max_iter=50, regu_init=100, u_trj_init=None):
-        x_trj, u_trj, cost_trace, _, _, _ = self.run_ilqr(x0, N, max_iter, regu_init, u_trj_init=u_trj_init)
-        return x_trj, u_trj, cost_trace
-
-
-if __name__ == '__main__':
-
-    import os, sys
-    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-    import env
-    import gym
-    import matplotlib.pyplot as plt
-
-    from argparse import ArgumentParser
-    parser = ArgumentParser()
-    parser.add_argument('--env', type=str, default='acrobot', choices=['acrobot', 'pendulum'])
-    args = parser.parse_args()
-
-    if args.env == 'acrobot':
-
-        design = np.array([1, 2, 1, 2])
-        x_init = np.array([0.95 * np.pi, 0, 0, 0])
-        x_target = np.array([np.pi, 0, 0, 0])
-        N = 100
-        dt = 0.05
-
-        env = gym.make('acrobot-v0', design=design, x_init=x_init, x_target=x_target, N=N, dt=dt)
-
-        ilqr = ILQR(env)
-        x_trj, u_trj, cost_trace = ilqr.solve(x_init, N, max_iter=50)
-
-        plt.plot(list(range(len(cost_trace))), cost_trace)
-        plt.title('Cost')
-        plt.show()
-
-        print(f'Final cost: {cost_trace[-1]}')
-
-        from env.acrobot.animate import animate_acrobot
-        animate_acrobot(design, x_trj, N)
-
-    elif args.env == 'pendulum':
-        
-        design = np.array([1, 2])
-        x_init = np.array([0 * np.pi, 0])
-        x_target = np.array([np.pi, 0])
-        N = 100
-        dt = 0.05
-
-        env = gym.make('pendulum-v0', design=design, x_init=x_init, x_target=x_target, N=N, dt=dt)
-
-        ilqr = ILQR(env)
-        x_trj, u_trj, cost_trace = ilqr.solve(x_init, N, max_iter=50)
-
-        plt.plot(list(range(len(cost_trace))), cost_trace)
-        plt.title('Cost')
-        plt.show()
-
-        print(f'Final cost: {cost_trace[-1]}')
-
-        from env.pendulum.animate import animate_pendulum
-        animate_pendulum(design, x_trj, N)
+    def solve(self, u_trj_init=None):
+        x_trj, u_trj, cost_trace, _, _, _ = self.run_ilqr(u_trj_init=u_trj_init)
+        return x_trj, u_trj, {'cost_trace': cost_trace}

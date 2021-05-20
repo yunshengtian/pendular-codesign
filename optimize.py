@@ -10,14 +10,14 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import env
 from env.config import config
 from env.utils import utils
-from control import ILQR, MPPI
+from control import get_control
 
 
 def torch2np(tensor):
     return tensor.clone().detach().numpy()
 
 
-def optimize_design(env_name, num_iter, lr):
+def optimize_design(env_name, control_name, num_iter, lr):
 
     # set up config
     env_config = config[env_name]
@@ -30,6 +30,7 @@ def optimize_design(env_name, num_iter, lr):
     Cost, Sim = env_utils['cost'], env_utils['sim']
     cost, sim = Cost(x_target_torch), Sim(design_torch, dt, use_rk4)
     env = gym.make(f'{env_name}-v0', design=design, x_init=x_init, x_target=x_target, N=N, dt=dt)
+    Control = get_control(control_name)
     optimizer = torch.optim.Adam([design_torch], lr=lr)
 
     results = {
@@ -46,7 +47,8 @@ def optimize_design(env_name, num_iter, lr):
         # solve for optimal control
         design = torch2np(design_torch)
         env.sim.set_design(design)
-        _, u_trj, _ = ILQR(env).solve(x_init, N, max_iter=1000, u_trj_init=u_trj_last)
+        control = Control(env)
+        _, u_trj, _ = control.solve(u_trj_init=u_trj_last)
         u_trj_last = u_trj
 
         # compute differentiable loss
@@ -76,13 +78,14 @@ if __name__ == '__main__':
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--env', type=str, default='pendulum', choices=list(config.keys()))
+    parser.add_argument('--env', type=str, default='pendulum', choices=['pendulum', 'acrobot'])
+    parser.add_argument('--control', type=str, default='ilqr', choices=['ilqr', 'mppi'])
     parser.add_argument('--num-iter', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--savefig', default=False, action='store_true')
     args = parser.parse_args()
 
-    results = optimize_design(args.env, num_iter=args.num_iter, lr=args.lr)
+    results = optimize_design(args.env, args.control, num_iter=args.num_iter, lr=args.lr)
 
     env_config, env_utils = config[args.env], utils[args.env]
     iteraions = np.arange(args.num_iter)
@@ -114,4 +117,4 @@ if __name__ == '__main__':
     # animate the optimal design
     Animation = env_utils['animate']
     animation = Animation()
-    animation.show(best_design, best_x_trj, env_config['N'])
+    animation.show(best_design, best_x_trj)

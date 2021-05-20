@@ -2,103 +2,79 @@ import numpy as np
 from multiprocessing import Pool
 from tqdm import tqdm
 
+from .config import config
+
 
 class MPPI:
     """ MMPI according to algorithm 2 in Williams et al., 2017
         'Information Theoretic MPC for Model-Based Reinforcement Learning' """
 
-    def __init__(self, env, K, T, U, lambda_=1.0, noise_mu=0, noise_sigma=1, u_init=1, num_cores=1):
-        self.K = K  # N_SAMPLES
-        self.T = T  # TIMESTEPS
-        self.lambda_ = lambda_
-        self.noise_mu = noise_mu
-        self.noise_sigma = noise_sigma
-        self.U = U
-        self.u_init = u_init
-        self.cost_total = np.zeros(shape=(self.K))
+    def __init__(self, env, K=None, T=None, lambda_=None, noise_mu=None, noise_sigma=None, u_init_sigma=None, num_cores=None):
 
         self.env = env
-        self.env.reset()
-        self.x_init = self.env.x_init
 
-        self.noise = np.random.normal(loc=self.noise_mu, scale=self.noise_sigma, size=(self.K, self.T))
-        self.num_cores = num_cores
+        control_config = config['mppi']
+        self.K = control_config['K'] if K is None else K
+        self.T = control_config['T'] if T is None else T
+        self.lambda_ = control_config['lambda'] if lambda_ is None else lambda_
+        self.noise_mu = control_config['noise_mu'] if noise_mu is None else noise_mu
+        self.noise_sigma = control_config['noise_sigma'] if noise_sigma is None else noise_sigma
+        self.u_init_sigma = control_config['u_init_sigma'] if u_init_sigma is None else u_init_sigma
+        self.num_cores = control_config['num_cores'] if num_cores is None else num_cores
 
-    def _compute_rollout_cost(self, k):
-        u_trj = (self.U[:self.T] + self.noise[k, :self.T])[:, None]
-        x_trj = self.env.sim.rollout(self.x_init, u_trj)
+        self.n_u = self.env.action_space.shape[0]
+
+    def _compute_rollout_cost(self, x_init, u_trj, noise):
+        u_trj = (u_trj[:self.T] + noise)
+        x_trj = self.env.sim.rollout(x_init, u_trj)
         return self.env.cost.cost_rollout(x_trj, u_trj)
 
     def _ensure_non_zero(self, cost, beta, factor):
         return np.exp(-factor * (cost - beta))
 
-    def control(self, iter=1000):
-        final_U = []
+    def solve(self, u_trj_init=None):
+        x_trj = []
+        cost = 0.0
 
+        cost_total = np.zeros(self.K)
+        noise = np.random.normal(loc=self.noise_mu, scale=self.noise_sigma, size=(self.K, self.T, self.n_u))
+
+        if u_trj_init is None:
+            N = self.env.spec.max_episode_steps
+            u_trj = np.random.randn(N - 1, self.n_u) * self.u_init_sigma
+        else:
+            u_trj = u_trj_init
+        
         if self.num_cores > 1:
             pool = Pool(self.num_cores)
         else:
             pool = None
+
+        x_trj.append(self.env.reset())
         
-        for _ in tqdm(range(iter), desc='MPPI'):
+        for _ in tqdm(range(self.env.spec.max_episode_steps), desc='MPPI'):
             if self.num_cores > 1:
-                self.cost_total[:] = pool.map(self._compute_rollout_cost, np.arange(self.K))
+                cost_total[:] = pool.starmap(self._compute_rollout_cost, [(x_trj[-1], u_trj, noise[k]) for k in range(self.K)])
             else:
                 for k in range(self.K):
-                    self.cost_total[k] = self._compute_rollout_cost(k)
+                    cost_total[k] = self._compute_rollout_cost(x_trj[-1], u_trj, noise[k])
 
-            beta = np.min(self.cost_total)  # minimum cost of all trajectories
-            cost_total_non_zero = self._ensure_non_zero(cost=self.cost_total, beta=beta, factor=1/self.lambda_)
+            beta = np.min(cost_total)  # minimum cost of all trajectories
+            cost_total_non_zero = self._ensure_non_zero(cost=cost_total, beta=beta, factor=1/self.lambda_)
 
             eta = np.sum(cost_total_non_zero)
-            omega = 1/eta * cost_total_non_zero
+            omega = (1/eta * cost_total_non_zero)[:, None]
 
-            self.U += [np.sum(omega * self.noise[:, t]) for t in range(self.T)]
+            u_trj[:self.T] += np.array([np.sum(omega * noise[:, t, :], axis=0) for t in range(self.T)])
 
-            s, r, _, _ = self.env.step([self.U[0]])
-            final_U.append(self.U[0])
+            s, r, _, _ = self.env.step(u_trj[0])
+            x_trj.append(s)
+            cost += -r
 
-            self.U = np.roll(self.U, -1)  # shift all elements to the left
-            self.U[-1] = self.u_init  #
-            self.cost_total[:] = 0
+            u_trj = np.roll(u_trj, -1)  # shift all elements to the left
 
-        return np.array(final_U)
+        if pool is not None:
+            pool.terminate()
 
-
-if __name__ == "__main__":
-
-    import os, sys
-    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-    import env
-    import gym
-
-    design = np.array([1, 2, 1, 2])
-    x_init = np.array([0.98 * np.pi, 0, 0, 0])
-    x_target = np.array([np.pi, 0, 0, 0])
-    N = 100
-    dt = 0.05
-
-    env = gym.make('acrobot-v0', design=design, x_init=x_init, x_target=x_target, N=N, dt=dt)
-
-    TIMESTEPS = 10 # T
-    N_SAMPLES = 1000  # K
-    ACTION_LOW = -10
-    ACTION_HIGH = 10
-
-    noise_mu = 0
-    noise_sigma = 10
-    lambda_ = 1e-2
-
-    U = np.random.uniform(low=ACTION_LOW, high=ACTION_HIGH, size=TIMESTEPS)  # pendulum joint effort in (-2, +2)
-
-    mppi = MPPI(env=env, 
-        K=N_SAMPLES, T=TIMESTEPS, U=U, lambda_=lambda_, noise_mu=noise_mu, noise_sigma=noise_sigma, u_init=0,
-        num_cores=4)
-    u_trj = mppi.control(iter=N)
-    x_trj = env.sim.rollout(x_init, u_trj)
-    final_cost = env.cost.cost_rollout(x_trj, u_trj[:, None])
-
-    print(f'Final cost: {final_cost}')
-
-    from animate import animate
-    animate(design, x_trj, N)
+        x_trj = np.array(x_trj)
+        return x_trj, u_trj, {'cost': cost}
