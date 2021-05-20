@@ -1,128 +1,71 @@
 import numpy as np
 import symengine as se
+import torch
 
 
-class AcrobotSim:
+class Sim:
 
-    def __init__(self, design, dt=0.1):
-        self.design = design # m1, m2, l1, l2
+    def __init__(self, design, dt, use_rk4=False):
+        self.design = design
         self.g = 9.81
         self.dt = dt
+        self.use_rk4 = use_rk4
+
+    def set_design(self, design):
+        self.design = design
+
+    def euler(self, continuous_dynamics, x, u):
+        xdot = continuous_dynamics(x, u)
+        x_next = x + xdot * self.dt
+        return x_next
+
+    def rk4(self, continuous_dynamics, x, u):
+        dt = self.dt
+        dt2 = dt / 2.0
+        k1 = continuous_dynamics(x, u)
+        k2 = continuous_dynamics(x + dt2 * k1, u)
+        k3 = continuous_dynamics(x + dt2 * k2, u)
+        k4 = continuous_dynamics(x + dt * k3, u)
+        x_next = x + dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+        return x_next
 
     def continuous_dynamics(self, x, u):
-        m1, m2, l1, l2 = self.design
-        g = self.g
-
-        s1, s2, s12 = np.sin(x[0]), np.sin(x[1]), np.sin(x[0] + x[1])
-        c1, c2 = np.cos(x[0]), np.cos(x[1])
-        q1dot, q2dot = x[2], x[3]
-        lc1 = 0.5 * l1
-        lc2 = 0.5 * l2
-        I1 = m1 * l1 ** 2
-        I2 = m2 * l2 ** 2
-
-        M = np.array([
-            [I1 + I2 + m2 * l1 ** 2 + 2 * m2 * l1 * lc2 * c2, I2 + m2 * l1 * lc2 * c2],
-            [I2 + m2 * l1 * lc2 * c2, I2]
-        ])
-        M_inv = np.linalg.inv(M)
-
-        C = np.array([
-            [-2 * m2 * l1 * lc2 * s2 * q2dot, -m2 * l1 * lc2 * s2 * q2dot],
-            [m2 * l1 * lc2 * s2 * q1dot, 0]
-        ])
-
-        tau = np.array([
-            -m1 * g * lc1 * s1 - m2 * g * (l1 * s1 + lc2 * s12),
-            -m2 * g * lc2 * s12
-        ])
-
-        B = np.array([0, 1])
-
-        xdot = np.concatenate([
-            x[2:],
-            M_inv @ (tau + B * u - C @ x[2:])
-        ])
-
-        return xdot
-
-    def discrete_dynamics(self, x, u, use_rk4 = True):
-        if use_rk4:
-            x_next = self.rk4(x,u)
-        else:
-            xdot = self.continuous_dynamics(x, u)
-            x_next = x + xdot * self.dt
-        return x_next
-
-    def rk4(self, x, u):
-        dt = self.dt
-        dt2 = dt / 2.0
-        k1 = self.continuous_dynamics(x, u)
-        k2 = self.continuous_dynamics(x+dt2 * k1, u)
-        k3 = self.continuous_dynamics(x+dt2 * k2, u)
-        k4 = self.continuous_dynamics(x+dt * k3, u)
-        x_next = x + dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
-        return x_next
-    
+        raise NotImplementedError
 
     def continuous_dynamics_sym(self, x, u):
-        m1, m2, l1, l2 = self.design
-        g = self.g
+        raise NotImplementedError
 
-        s1, s2, s12 = se.sin(x[0]), se.sin(x[1]), se.sin(x[0] + x[1])
-        c1, c2 = se.cos(x[0]), se.cos(x[1])
-        q1dot, q2dot = x[2], x[3]
-        lc1 = 0.5 * l1
-        lc2 = 0.5 * l2
-        I1 = m1 * l1 ** 2
-        I2 = m2 * l2 ** 2
+    def continuous_dynamics_torch(self, x, u):
+        raise NotImplementedError
 
-        M = se.Matrix([
-            [I1 + I2 + m2 * l1 ** 2 + 2 * m2 * l1 * lc2 * c2, I2 + m2 * l1 * lc2 * c2],
-            [I2 + m2 * l1 * lc2 * c2, I2]
-        ])
-        M_inv = M.inv()
-
-        C = se.Matrix([
-            [-2 * m2 * l1 * lc2 * s2 * q2dot, -m2 * l1 * lc2 * s2 * q2dot],
-            [m2 * l1 * lc2 * s2 * q1dot, 0]
-        ])
-
-        tau = se.Matrix([
-            [-m1 * g * lc1 * s1 - m2 * g * (l1 * s1 + lc2 * s12)],
-            [-m2 * g * lc2 * s12]
-        ])
-
-        B = se.Matrix([[0], [1]])
-
-        xdot = se.zeros(4, 1)
-        xdot[:2, :] = x[2:, :]
-        xdot[2:, :] = M_inv * (tau + B * u - C * x[2:, :])
-
-        return xdot
-
-    def discrete_dynamics_sym(self, x, u, use_rk4 = True):
-        if use_rk4:
-            x_next = self.rk4_sym(x,u)
-        else:   
-            xdot = self.continuous_dynamics_sym(x, u)
-            x_next = x + xdot * self.dt
+    def _discrete_dynamics(self, continuous_dynamics, x, u):
+        if self.use_rk4:
+            x_next = self.rk4(continuous_dynamics, x, u)
+        else:
+            x_next = self.euler(continuous_dynamics, x, u)
         return x_next
 
-    def rk4_sym(self,x,u):
-        dt = self.dt
-        dt2 = dt / 2.0
-        k1 = self.continuous_dynamics_sym(x, u)
-        k2 = self.continuous_dynamics_sym(x+dt2 * k1, u)
-        k3 = self.continuous_dynamics_sym(x+dt2 * k2, u)
-        k4 = self.continuous_dynamics_sym(x+dt * k3, u)
-        x_next = x + dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
-        return x_next
+    def discrete_dynamics(self, x, u):
+        return self._discrete_dynamics(self.continuous_dynamics, x, u)
 
-    def rollout(self, x0, u_trj):
-        x_trj = np.zeros((u_trj.shape[0] + 1, x0.shape[0]))
+    def discrete_dynamics_sym(self, x, u):
+        return self._discrete_dynamics(self.continuous_dynamics_sym, x, u)
+
+    def discrete_dynamics_torch(self, x, u):
+        return self._discrete_dynamics(self.continuous_dynamics_torch, x, u)
+
+    def _rollout(self, discrete_dynamics, x0, u_trj):
+        x_trj = [None] * (len(u_trj) + 1)
         x_trj[0] = x0
         for i in range(len(u_trj)):
-            x_trj[i + 1] = self.discrete_dynamics(x_trj[i], u_trj[i])
+            x_trj[i + 1] = discrete_dynamics(x_trj[i], u_trj[i])
         return x_trj
-    
+
+    def rollout(self, x0, u_trj):
+        return np.array(self._rollout(self.discrete_dynamics, x0, u_trj))
+
+    def rollout_sym(self, x0, u_trj):
+        return se.Matrix(self._rollout(self.discrete_dynamics_sym, x0, u_trj))
+
+    def rollout_torch(self, x0, u_trj):
+        return torch.stack(self._rollout(self.discrete_dynamics_torch, x0, u_trj))

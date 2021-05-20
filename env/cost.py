@@ -1,19 +1,13 @@
-class AcrobotCost:
+class Cost:
 
     def __init__(self, x_target):
         self.x_target = x_target
-        self.eps = 1e-6
 
     def cost_stage(self, x, u):
-        c_theta = (x[0] - self.x_target[0]) ** 2 + x[1] ** 2 + self.eps
-        c_thetadot = x[2] ** 2 + x[3] ** 2
-        c_control = u[0] ** 2 * 0.1
-        return c_theta + c_thetadot + c_control
+        raise NotImplementedError
 
     def cost_final(self, x):
-        c_theta = (x[0] - self.x_target[0]) ** 2 + x[1] ** 2 + self.eps
-        c_thetadot = x[2] ** 2 + x[3] ** 2
-        return c_theta + c_thetadot
+        raise NotImplementedError
 
     def cost_rollout(self, x_trj, u_trj):
         cost = 0.0
