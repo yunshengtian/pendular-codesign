@@ -62,7 +62,7 @@ def optimize_design(env_name, num_iter, lr):
 
         # update results
         results['loss'].append(torch2np(loss_torch))
-        results['design'].append(torch2np(design_torch))
+        results['design'].append(sim.get_design_params(torch2np(design_torch)))
         results['x_trj'].append(torch2np(x_trj_torch))
         results['u_trj'].append(u_trj)
 
@@ -95,8 +95,8 @@ if __name__ == '__main__':
     plt.show()
 
     # plot design curve
-    n_design_param = len(env_config['design_init'])
     design_name = env_config['design_name']
+    n_design_param = len(design_name)
     fig, ax = plt.subplots(1, n_design_param, figsize=(n_design_param * 4, 3))
     for i in range(n_design_param):
         ax[i].plot(iteraions, results['design'][:, i])

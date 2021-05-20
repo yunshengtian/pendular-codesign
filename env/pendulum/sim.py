@@ -7,9 +7,18 @@ from ..sim import Sim
 
 class PendulumSim(Sim):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.inertia = 4
+
+    def get_design_params(self, design):
+        [m] = design
+        l = (self.inertia / m) ** 0.5
+        return m, l
+
     def continuous_dynamics(self, x, u):
 
-        m, l = self.design
+        m, l = self.get_design_params(self.design)
         g = self.g
 
         s = np.sin(x[0])
@@ -24,7 +33,7 @@ class PendulumSim(Sim):
 
     def continuous_dynamics_sym(self, x, u):
 
-        m, l = self.design
+        m, l = self.get_design_params(self.design)
         g = self.g
 
         s = se.sin(x[0])
@@ -38,7 +47,7 @@ class PendulumSim(Sim):
 
     def continuous_dynamics_torch(self, x, u):
 
-        m, l = self.design
+        m, l = self.get_design_params(self.design)
         g = self.g
 
         s = torch.sin(x[0])

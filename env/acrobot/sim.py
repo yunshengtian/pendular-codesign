@@ -7,9 +7,22 @@ from ..sim import Sim
 
 class AcrobotSim(Sim):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.inertia1 = 4
+        self.inertia2 = 4
+        self.length_sum = 3
+
+    def get_design_params(self, design):
+        [l1] = design
+        l2 = self.length_sum - l1
+        m1 = self.inertia1 / l1 ** 2
+        m2 = self.inertia2 / l2 ** 2
+        return m1, m2, l1, l2
+
     def continuous_dynamics(self, x, u):
 
-        m1, m2, l1, l2 = self.design
+        m1, m2, l1, l2 = self.get_design_params(self.design)
         g = self.g
 
         s1, s2, s12 = np.sin(x[0]), np.sin(x[1]), np.sin(x[0] + x[1])
@@ -47,7 +60,7 @@ class AcrobotSim(Sim):
 
     def continuous_dynamics_sym(self, x, u):
 
-        m1, m2, l1, l2 = self.design
+        m1, m2, l1, l2 = self.get_design_params(self.design)
         g = self.g
 
         s1, s2, s12 = se.sin(x[0]), se.sin(x[1]), se.sin(x[0] + x[1])
@@ -84,7 +97,7 @@ class AcrobotSim(Sim):
 
     def continuous_dynamics_torch(self, x, u):
 
-        m1, m2, l1, l2 = self.design
+        m1, m2, l1, l2 = self.get_design_params(self.design)
         g = self.g
 
         s1, s2, s12 = torch.sin(x[0]), torch.sin(x[1]), torch.sin(x[0] + x[1])
