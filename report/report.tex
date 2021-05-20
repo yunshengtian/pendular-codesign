@@ -8,15 +8,16 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{hyperref}
-\include{jian.tex}
+\include{jian}
+\newcommand{\init}{\mathrm{init}}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
 
-\title{Conference Paper Title*\\
-{\footnotesize \textsuperscript{*}Note: Sub-titles are not captured in Xplore and
-should not be used}
-\thanks{Identify applicable funding agency here. If none, delete this.}
+\title{Co-optimization\\
+% {\footnotesize \textsuperscript{*}Note: Sub-titles are not captured in Xplore and
+% should not be used}
+% \thanks{Identify applicable funding agency here. If none, delete this.}
 }
 
 \author{
@@ -36,9 +37,7 @@ jianqian@mit.edu}
 \maketitle
 
 \begin{abstract}
-This document is a model and instructions for \LaTeX.
-This and the IEEEtran.cls file define the components of your paper [title, text, heads, etc.]. *CRITICAL: Do Not Use Symbols, Special Characters, Footnotes, 
-or Math in Paper Title or Abstract.
+We present a general scheme to co-optimize the control input and the robot design, where the target is to optimize the motion planning variables and the robot design parameters such as mass, length, etc., at the same time. The scheme includes two parts: the motion planning part and the parameter optimization part. The motion planning part can be any existing algorithm, we used mainly iterative linear quadratic regulator (iLQR). For the parameter optimization, we use vanilla gradient descent. We demonstrate our results on pendulum and acrobot environment, showing that this scheme will try to make the environment more controllable. 
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -63,63 +62,39 @@ For a robot to achieve certain tasks successfully, we all know that control is i
 
 \section{Problem formulation}
 
-
-\section{Project Update \#1}
-
-\subsection{Approach 1: Discretization}
-
-
-\textbf{Setting:}
-\vspace{-5pt}
-\begin{itemize}
-    \setlength{\itemsep}{0pt}
-    \setlength{\parsep}{0pt}
-    \setlength{\parskip}{0pt}
-    \item Discretize the dynamics to formulate the objective
-\end{itemize}
-
-
-We aim to solve the following optimization problem:
+Given the hard nature of the control problems, we don't hope to get elegant analytical solutions for the continuous to-go cost functions, so we formulate our problem in the following discretized optimization problem:
 \begin{gather*}
-x_{1:T}^*, u_{1:T}^*, \theta_{1:T}^* = \argmin\limits_{x_{1:T},u_{1:T},\theta_{1:T}}  \sum\limits_{t=1}^{T}  C_t(x_t,u_t) \\
+x_{1:T+1}^*, u_{1:T}^*, \theta_{1:T}^* = \argmin\limits_{x_{1:T},u_{1:T},\theta_{1:T}}  \sum\limits_{t=1}^{T}  C_{\theta_t,t}(x_t,u_t) \\
 \text{subject to~} x_{t+1} = f_{\theta_t}(x_t,u_t),~x_1 = x_{\text{init}},~\theta_{1:T} = \theta_c
 \end{gather*}
-Here, $x_{1:T}$ are the states at time $t$, $u_{1:T}$ are the control inputs at time $t$, $\theta_{1:T}$ are the design paramteres, which are fixed through all time $t$. This formulation naturally hints at an iterative methods for co-optimizing $u_{1:T}$ and $\theta_{1:T}$ . But obstacles lie at how to compute the gradient for $\theta$. 
-
-\subsubsection{Fixed point + iLQR + gradient}
+Here, $x_{1:T}$ are the states at time step $t$, $u_{1:T}$ are the control inputs at time step $t$, $\theta_{1:T}$ are the design paramteres, which are fixed to be $\theta_c$ through all time step $t$. For each time step $t$, there is a running cost $C_{\theta_t,t}(x_t,u_t)$. And our goal is to find the optimal $(\theta_c, u_{1:T})$ for a given $x_1$ that achieves the minimum cost. This formulation naturally hints at an iterative methods for co-optimizing $u_{1:T-1}$ and $\theta_{1:T-1}$ . But obstacles lie at how to compute the gradient for $\theta$. Thus we tried the following first algorithm.
 
 
+\section{First attempt}
 
-\textbf{Setting:}
-\vspace{-5pt}
-\begin{itemize}
-    \setlength{\itemsep}{0pt}
-    \setlength{\parsep}{0pt}
-    \setlength{\parskip}{0pt}
-    \item Co-optimizing around a fixed point
-    \item Discrete time LQR for control inputs
-    \item Gradient descent for design parameters
-\end{itemize}
+\subsection{Fixed point + discrete-time LQR + gradient descent}
 
-
-we propose the following iterative methods for optimizing design parameters around any fixed point. Suppose for a fixed design parameter $\theta$, we have a fixed point $\vx^*, \vu^*$, thus around this fixed point we can use a discrete time LQR to solve for the optimal control sequence,
-
-\begin{gather*}
-    x_{1:T}^*, u_{1:T}^*= \argmin\limits_{x_{1:T},u_{1:T},\theta_{1:T}} \sum\limits_{t=1}^{T} x_t^\top Q x_t + u_t^\top R u_t \\
-    \text{subject to~} x_{t+1} = A_{\theta,t}(x_t - x^*) + B_{\theta,t}(u_t-u^*) ,~x_1 = x_{\text{init}},~\theta_{1:T} = \theta_c
-\end{gather*}
-
-
-Thus for a fixed optimal trajectory $x_{1:T}^*, u_{1:T}^*$, the gradient w.r.t. $\theta$ is,
+The target of this algorithm is to co-optimize around a fixed point. Suppose we have a targeted fixed point $\vx^*, \vu^*$ for all the design parameters $\theta$. Thus for any $\theta$, if we start near this fixed point, then we can approximate the dynamics around this fixed point by its linear expansion. More concretely, if around $\vx^*, \vu^*$, 
 \begin{align*}
-\frac{\partial \ell}{\partial \theta} = \sum\limits_{t=1}^{T} \frac{\partial \ell}{\partial A_{t,\theta}} \frac{\partial A_{t,\theta}}{\partial \theta}  + \frac{\partial \ell}{\partial B_{t,\theta}} \frac{\partial B_{t,\theta}}{\partial \theta}\,, 
+\dot{x} = A_{\theta}(x - x^*) + B_{\theta}(u-u^*)
 \end{align*}
-where $ \frac{\partial \ell}{\partial A_{t,\theta}}$ and $\frac{\partial \ell}{\partial B_{t,\theta}} $ can be calculated by a neural net taking input $x_1, u_{1:T}$, outputing $\ell$.
+With a bit abuse of notation, we denote $\d t$ here a very small change in time. Thus we can formulate the following optimization problem, 
+\begin{gather*}
+    x_{1:T+1}^*, u_{1:T}^*= \argmin\limits_{x_{1:T+1},u_{1:T},\theta_{1:T}} \\
+    \sum\limits_{t=1}^{T+1} (x_t - x^*)^\top  Q (x_t-x^*) + (u_t-u^*)^\top R (u_t-u^*) \\
+    \text{subject to~} x_{t+1} = A_{\theta}(x_t - x^*)\d t + B_{\theta}(u_t-u^*)\d t, \\
+    x_1 = x_{\text{init}},~\theta_{1:T} = \theta_c
+\end{gather*}
+For fixed $Q$ and $R$, we can use discrete-time LQR to solve for the optimal trajectory $x_{1:T+1}^*, u_{1:T}^*$. Once we obtain such a trajectory, we consider $x^*_1$ and $u_{1:T}^*$ as fixed, and compute the gradient of the cost-to-go function $\ell$ w.r.t. $\theta$,
+\begin{align*}
+\frac{\partial \ell}{\partial \theta} = \sum\limits_{t=1}^{T} \frac{\partial \ell}{\partial A_{\theta}} \frac{\partial A_{\theta}}{\partial \theta}  + \frac{\partial \ell}{\partial B_{\theta}} \frac{\partial B_{\theta}}{\partial \theta}\,, 
+\end{align*}
+where all the gradients can be calculated using any automatic differentiation library.
 
 
 
 
-\subsubsection{Acrobot}
+\subsection{Acrobot}
 
 We concretize the aforementioned method on Acrobot design. Following \cite{murray1991case} around the unstable fixed point. The state variable for acrobot is $\vx = (\vq,\dot{\vq})$, where $\vq = (\theta_1,\theta_2)$. Here we only consider the design parameter $\lambda = (m_1,m_2,l_1,l_2)$. The lumped variable here is,
 \begin{gather*}
@@ -127,7 +102,7 @@ a =  (m_1+m_2)l_1^2,\qquad b=m_2l_2^2,\qquad c=m_2l_2^2\\
 d = (m_1+m_2)gl,\qquad  e=m_2gl_2  
 \end{gather*}
 Furthermore, around the fixed point $\vx^* = (0,0,0,0), \vu^* = 0$, we have,
-\begin{align*}
+\begin{gather*}
 M = 
 \begin{pmatrix}
 a+b&b\\
@@ -137,105 +112,96 @@ B =
 \begin{pmatrix}
 0\\
 1
-\end{pmatrix},\quad
-\frac{\partial \tau_g}{\partial \vq} =
+\end{pmatrix},\\
+\frac{\partial G}{\partial \vq} =
 \begin{pmatrix}
 d+e&e\\
 -e&-e
 \end{pmatrix}
-\end{align*}
+\end{gather*}
 Thus,
 \begin{align*}
-A_{lin,\lambda} = 
+A_{\lambda} = 
 \begin{pmatrix}
 0 & I\\
-M^{-1} \frac{\partial \tau_g}{\partial \vq} & 0
+M^{-1} \frac{\partial G}{\partial \vq} & 0
 \end{pmatrix},\quad
-B_{lin,\lambda} =
+B_{\lambda} =
 \begin{pmatrix}
 0 \\
 M^{-1}B
 \end{pmatrix}
 \end{align*}
-Choose $x_{\text{init}} = (\pi/10,0,0,0)$, the optimization process goes iteratively as:
+Choose $x_{\text{init}} = (\pi/10,0,0,0)$. Then we have a well-formulated problem and algorithm.
 
 
-\textbf{Step 1:}
-For fixed $\lambda$, solve,
+\section{Second attempt}
 
-\begin{gather*}
-    x_{1:T}^*, u_{1:T}^*= \argmin\limits_{x_{1:T},u_{1:T}} \sum\limits_{t=1}^{T} x_t^\top Q x_t + u_t^\top R u_t \\
-    \text{subject to~} x_{t+1} = A_{\lambda,t}(x_t - x^*) + B_{\lambda,t}(u_t-u^*) ,~x_1 = x_{\text{init}}
+
+\subsection{Fixed point + iLQR + gradient descent}
+\label{subsec:ilqr}
+
+
+The linear approximation is a good start, but is a rather coarse approximation of the real dynamics and the real loss. Thus we set off to bring in more real world dynamics by forcing $x_{t+1} = x_t + \vf_\theta(x_t,u_t)\d t$. To cope with this change we turn to iLQR to solve the new optimization problem. More specifically, the target of the iLQR procedure is to solve the following optimization problem:
+\begin{gather*} 
+    \min_{u_{1:T}} \quad  \ell_f(x_{T+1}) +
+    \sum_{t=1}^{T} \ell(x_t,u_t) \\ 
+    \text{subject to} \quad x_{t+1} = x_t + \vf_\theta(x_t,u_t)\d t,  x_1 = x_\init
 \end{gather*}
-
-\textbf{Step 2:}
-For fixed $x_1^*, u_{1:T}^*$, write the loss function as a function of the design parameter $\lambda$, as,
+Here $\ell_f(x_{T+1})  = \norm{x_{T+1} - x^*}^2$ is the final loss at the final time step, $ \ell(x_t,u_t) = \norm{x_{t} - x^*}^2 + \norm{u_t}^2$ is the running loss, $\theta$ is the design parameters, and $\dot{x_t} = \vf_\theta(x_t,u_t)$ is the dynamics of the environment under design parameter $\theta$. iLQR is achieved following the homework notebook: where the target is to find the solution to the following Bellman equation subject to the constraints:
 \begin{align*}
-\ell = \sum\limits_{t=1}^{T} x_t^\top Q x_t,~~\text{where}~~ x_{t+1} = A_{lin,\lambda}x_t + B_{lin,\lambda}u_t.
+V(x_t) = \min\limits_{u_t} \ell(x_t,u_t) + V(x_{t+1})\,.
 \end{align*}
-Then compute the corresponding derivative $\frac{\partial \ell}{\partial \lambda}$ using any differentiable simulation tool.
-
-
-
-
-
-\textbf{Experiment Results:} \url{https://colab.research.google.com/drive/1DWL6GVdLvq3hZO_nCHFhEoosV8RfJKYA?usp=sharing}
-
-
-
-
-
-\subsection{Approach 2: Diff MPC\cite{amos2018differentiable}}
-
-This approach can be further extended to using differentiable MPC. Following exactly the same algorithm as in \cite{amos2018differentiable}, where the original goal is system identification.
-
-
-But the coding is not very easy as they only implemented the MPC part of the algorithm. More time is needed to see if it is easily modifiable to our setting.
-
-
-\section{Project Update \#2}
-
-
-\subsection{Fixed point + iLQR + gradient}
-
-
-\textbf{Setting:}
-\vspace{-5pt}
-\begin{itemize}
-    \setlength{\itemsep}{0pt}
-    \setlength{\parsep}{0pt}
-    \setlength{\parskip}{0pt}
-    \item Co-optimizing around a fixed point
-    \item iLQR for control inputs
-    \item Gradient descent for design parameters
-\end{itemize}
-
-We used discrete time LQR where the dynamics is the linear expansion at point $\vx = (\pi,0,0,0)$. Now we proceed to use iLQR to obtain a more accurate model. More specifically, the target of the iLQR procedure is to solve the following optimization problem:
-\begin{align*} \min_{\mathbf{u}[\cdot]} \quad & \ell_f(\mathbf{x}[N]) +
-    \sum_{n=0}^{N-1} \ell(\mathbf{x}[n],\mathbf{u}[n]) \\ \text{subject to} \quad & \mathbf{x}[n+1] = {\bf
-    f_\varphi}(\mathbf{x}[n], \mathbf{u}[n]), \quad \forall n\in[0, N-1] \\ & \mathbf{x}[0] = \mathbf{x}_0
+where the Q-value formulation with the constraints goes:
+\begin{align*}
+&\min\limits_{u_t} Q(x_t,u_t),\quad \forall t\in [1,T]\\
+\text{subject to }&Q(x_t,u_t) = \ell(x_t,u_t) + V(x_{t+1})\\
+&V(x_{T+1}) = \ell_f(x_{{T+1}})\\
+&x_{t+1} = x_t + \vf_\theta(x_t,u_t)\d t\\
+&x_1 = x_\init\,.
 \end{align*}
-Here $\ell_f(\vx[N]) = \norm{\vx[n] - \vx_{\rm target}}^2$ is the final loss, $\ell(\vx[n],\vu[n]) = \norm{\vx[n] - \vx_{\rm target}}^2 + \norm{\vu}^2$ is the instantaneous loss, $\varphi$ are the design parameters, and $\vf_\varphi(\vx[n],\vu[n])$ is the dynamics of the acrobot under design parameter $\varphi$. To achieve this, we follow the derivations of iLQR:
-\begin{itemize}
-    \setlength{\itemsep}{0pt}
-    \setlength{\parsep}{0pt}
-    \setlength{\parskip}{0pt}
-    \item Program the dynamics for acrobot using AutodiffXd under design parameter $\varphi$.
-    \item Specify the costs, $Q_{\rm terms}$, $V_{\rm terms}$, forward, backword pass.
-\end{itemize}
+Then expanding the loss terms to retrieve the forward pass and backword update as in the notebook. Then with the optimal trajectory obtained, we have the following forward graph as in Figure \ref{fig:phi} for computing the loss $l(\theta)$. Then we are able to do a gradient step for $\theta$.
+
 \begin{figure}[!h]
 \label{fig:phi}
 \centering
 \includegraphics[width=.5\textwidth]{forward_phi.png}
-\caption{Forward graph}
-\label{}
+\caption{Forward graph for computing loss}
 \end{figure}
-With all this, for any design paramter $\varphi$, we can find the optimal trajectory $(\vx_\varphi,\vu_\varphi)$. Then we proceed to update the design parameter by recording the gradients of the forward pass with the optimal trajectory $(\vx_\varphi,\vu_\varphi)$. More specifically, we have Figure \ref{fig:phi}
 
-The experiment is on: \url{https://colab.research.google.com/drive/123VmnYlPXSXiouedK_vBS2VpI8zld_VG?usp=sharing}
 
+\subsection{Model predictive path integral (MPPI) control}
+It turns out that Acrobot is not a very easy environment. There are sometimes problems to get the optimal trajectory. Thus we tried also the MPPI method from \cite{williams2017information}. Roughly speaking, for a control sequence $u^i_{1:T}$. The method generates $n$ pertubations $\eps^{1:N}$, then update the control sequence using a scoring system $w$:
+\begin{align*}
+u_t^{i+1} = u_t^i +  \sum\limits_{n=1}^{N} w(\eps^n) \eps^n_t\,.
+\end{align*}
+This method does not work very well in general with acrobot.
+
+\subsection{Pendulum}
+
+The acrobot environment is unexpectedly hard to work with, so we tried to work with pendulum first. We consider the dynamics of the pendulum with a damping term $b=1$ as follows:
+\begin{align*}
+ml^2\ddot{\theta}(t) + mgl \sin \theta(t) = -\dot{\theta}(t) + u(t)
+\end{align*}
+For a system as easy as pendulum, the method in \ref{subsec:ilqr} works quite well. The method tries to decrease both the mass and the length of the pendulum in order to make the system more controllable. This matches our expectation. 
+
+
+
+
+\section{Experiment and analysis}
+
+\paragraph{Tricks} 
+\begin{itemize}
+    \item initialization
+    \item rk4 
+\end{itemize}
 
 \section{Discussion and future works}
+
+\begin{itemize}
+    \item Legged robot and contact dynamics
+    \item Airplane and aerodynamic
+\end{itemize}
 
 
 
