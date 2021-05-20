@@ -132,7 +132,7 @@ class ILQR:
         regu_trace = [regu]
 
         # Run main loop
-        for it in tqdm(range(max_iter)):
+        for it in tqdm(range(max_iter), desc='iLQR'):
             # Backward and forward pass
             k_trj, K_trj, expected_cost_redu = self.backward_pass(x_trj, u_trj, regu)
             x_trj_new, u_trj_new = self.forward_pass(x_trj, u_trj, k_trj, K_trj)

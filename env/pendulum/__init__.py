@@ -1,4 +1,3 @@
-from .animate import animate_pendulum
+from .animate import PendulumAnimation
 from .cost import PendulumCost
-from .env import PendulumEnv
-from .sim import PendulumSim, PendulumSimTorch
+from .sim import PendulumSim

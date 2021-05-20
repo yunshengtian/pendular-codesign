@@ -7,8 +7,9 @@ from tqdm import tqdm
 import os, sys
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-from env.config import config, utils
 import env
+from env.config import config
+from env.utils import utils
 from control import ILQR, MPPI
 
 
@@ -18,16 +19,17 @@ def torch2np(tensor):
 
 def optimize_design(env_name, num_iter, lr):
 
-    # set up env config
+    # set up config
     env_config = config[env_name]
-    dt, N, x_init, x_target, design = env_config['dt'], env_config['N'], env_config['x_init'], env_config['x_target'], env_config['design_init']
+    dt, N, x_init, x_target, design, use_rk4 = \
+        env_config['dt'], env_config['N'], env_config['x_init'], env_config['x_target'], env_config['design_init'], env_config['use_rk4']
     x_init_torch, x_target_torch, design_torch = torch.tensor(x_init), torch.tensor(x_target), torch.tensor(design, requires_grad=True)
 
-    # set up env utils
+    # set up utils
     env_utils = utils[env_name]
+    Cost, Sim = env_utils['cost'], env_utils['sim']
+    cost, sim = Cost(x_target_torch), Sim(design_torch, dt, use_rk4)
     env = gym.make(f'{env_name}-v0', design=design, x_init=x_init, x_target=x_target, N=N, dt=dt)
-    cost_torch = env_utils['cost'](x_target_torch)
-    sim_torch = env_utils['sim'](design_torch, dt)
     optimizer = torch.optim.Adam([design_torch], lr=lr)
 
     results = {
@@ -39,7 +41,7 @@ def optimize_design(env_name, num_iter, lr):
 
     u_trj_last = None
     
-    for i in tqdm(range(num_iter)):
+    for i in tqdm(range(num_iter), desc='Design'):
 
         # solve for optimal control
         design = torch2np(design_torch)
@@ -48,10 +50,10 @@ def optimize_design(env_name, num_iter, lr):
         u_trj_last = u_trj
 
         # compute differentiable loss
-        sim_torch.set_design(design_torch)
+        sim.set_design(design_torch)
         u_trj_torch = torch.tensor(u_trj, dtype=torch.float32)
-        x_trj_torch = sim_torch.rollout(x_init_torch, u_trj_torch)
-        loss_torch = cost_torch.cost_rollout(x_trj_torch, u_trj_torch[:, None])
+        x_trj_torch = sim.rollout_torch(x_init_torch, u_trj_torch)
+        loss_torch = cost.cost_rollout(x_trj_torch, u_trj_torch[:, None])
         
         # optimize design
         optimizer.zero_grad()
@@ -110,5 +112,6 @@ if __name__ == '__main__':
     print(f'best design: {best_design}')
 
     # animate the optimal design
-    animate_func = env_utils['animate']
-    animate_func(best_design, best_x_trj, env_config['N'])
+    Animation = env_utils['animate']
+    animation = Animation()
+    animation.show(best_design, best_x_trj, env_config['N'])

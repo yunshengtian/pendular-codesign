@@ -40,7 +40,7 @@ class MPPI:
         else:
             pool = None
         
-        for _ in tqdm(range(iter)):
+        for _ in tqdm(range(iter), desc='MPPI'):
             if self.num_cores > 1:
                 self.cost_total[:] = pool.map(self._compute_rollout_cost, np.arange(self.K))
             else:

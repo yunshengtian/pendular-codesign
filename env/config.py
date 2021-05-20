@@ -1,8 +1,5 @@
 import numpy as np
 
-from .acrobot import *
-from .pendulum import *
-
 
 config = {
 
@@ -13,6 +10,7 @@ config = {
         'x_target': np.array([np.pi, 0., 0., 0.]),
         'design_init': np.array([1., 2., 1., 2.]),
         'design_name': ['m1', 'm2', 'l1', 'l2'],
+        'use_rk4': True,
     },
 
     'pendulum': {
@@ -22,23 +20,7 @@ config = {
         'x_target': np.array([np.pi, 0.]),
         'design_init': np.array([1., 2.]),
         'design_name': ['m', 'l'],
-    },
-
-}
-
-
-utils = {
-    
-    'acrobot': {
-        'sim': AcrobotSimTorch,
-        'cost': AcrobotCost,
-        'animate': animate_acrobot,
-    },
-
-    'pendulum': {
-        'sim': PendulumSimTorch,
-        'cost': PendulumCost,
-        'animate': animate_pendulum,
+        'use_rk4': False,
     },
 
 }
