@@ -24,26 +24,28 @@ class MPPI:
 
         self.n_u = self.env.action_space.shape[0]
 
-    def _compute_rollout_cost(self, x_init, u_trj, noise):
-        u_trj = (u_trj[:self.T] + noise)
-        x_trj = self.env.sim.rollout(x_init, u_trj)
-        return self.env.cost.cost_rollout(x_trj, u_trj)
+    def _compute_rollout_cost(self, x_init, u_T, noise):
+        u_T += noise
+        x_T = self.env.sim.rollout(x_init, u_T)
+        return self.env.cost.cost_rollout(x_T, u_T)
 
     def _ensure_non_zero(self, cost, beta, factor):
         return np.exp(-factor * (cost - beta))
 
     def solve(self, u_trj_init=None):
         x_trj = []
+        u_trj = []
         cost = 0.0
 
         cost_total = np.zeros(self.K)
         noise = np.random.normal(loc=self.noise_mu, scale=self.noise_sigma, size=(self.K, self.T, self.n_u))
 
+        N = self.env.spec.max_episode_steps
+
         if u_trj_init is None:
-            N = self.env.spec.max_episode_steps
-            u_trj = np.random.randn(N - 1, self.n_u) * self.u_init_sigma
-        else:
-            u_trj = u_trj_init
+            u_trj_init = np.random.randn(N - 1, self.n_u) * self.u_init_sigma
+
+        u_T = u_trj_init[:self.T]
         
         if self.num_cores > 1:
             pool = Pool(self.num_cores)
@@ -52,12 +54,13 @@ class MPPI:
 
         x_trj.append(self.env.reset())
         
-        for _ in tqdm(range(self.env.spec.max_episode_steps), desc='MPPI'):
+        for i in tqdm(range(N), desc='MPPI'):
+            T = min(N - i, self.T)
             if self.num_cores > 1:
-                cost_total[:] = pool.starmap(self._compute_rollout_cost, [(x_trj[-1], u_trj, noise[k]) for k in range(self.K)])
+                cost_total[:] = pool.starmap(self._compute_rollout_cost, [(x_trj[-1], u_T[:T], noise[k, :T]) for k in range(self.K)])
             else:
                 for k in range(self.K):
-                    cost_total[k] = self._compute_rollout_cost(x_trj[-1], u_trj, noise[k])
+                    cost_total[k] = self._compute_rollout_cost(x_trj[-1], u_T[:T], noise[k, :T])
 
             beta = np.min(cost_total)  # minimum cost of all trajectories
             cost_total_non_zero = self._ensure_non_zero(cost=cost_total, beta=beta, factor=1/self.lambda_)
@@ -65,16 +68,19 @@ class MPPI:
             eta = np.sum(cost_total_non_zero)
             omega = (1/eta * cost_total_non_zero)[:, None]
 
-            u_trj[:self.T] += np.array([np.sum(omega * noise[:, t, :], axis=0) for t in range(self.T)])
+            u_T += np.array([np.sum(omega * noise[:, t, :], axis=0) for t in range(self.T)])
 
-            s, r, _, _ = self.env.step(u_trj[0])
+            s, r, _, _ = self.env.step(u_T[0])
             x_trj.append(s)
+            u_trj.append(u_T[0])
             cost += -r
 
-            u_trj = np.roll(u_trj, -1)  # shift all elements to the left
+            u_T = np.roll(u_T, -1)  # shift all elements to the left
+            if i + self.T < N - 1:
+                u_T[-1] = u_trj_init[i + self.T]
 
         if pool is not None:
             pool.terminate()
 
-        x_trj = np.array(x_trj)
+        x_trj, u_trj = np.array(x_trj), np.array(u_trj)
         return x_trj, u_trj, {'cost': cost}
