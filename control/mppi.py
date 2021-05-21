@@ -25,9 +25,8 @@ class MPPI:
         self.n_u = self.env.action_space.shape[0]
 
     def _compute_rollout_cost(self, x_init, u_T, noise):
-        u_T += noise
-        x_T = self.env.sim.rollout(x_init, u_T)
-        return self.env.cost.cost_rollout(x_T, u_T)
+        x_T = self.env.sim.rollout(x_init, u_T + noise)
+        return self.env.cost.cost_rollout(x_T, u_T + noise)
 
     def _ensure_non_zero(self, cost, beta, factor):
         return np.exp(-factor * (cost - beta))
