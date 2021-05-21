@@ -36,6 +36,8 @@ class Env(gym.Env):
         self.action_space = gym.spaces.Box(low=-10, high=10, shape=(1,))
 
     def step(self, u):
+        assert self.n < self.N, 'env needs reset'
+
         cost = self.cost.cost_stage(self.x, u)
         self.x = self.sim.discrete_dynamics(self.x, u)
         self.n += 1

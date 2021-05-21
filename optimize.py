@@ -29,7 +29,7 @@ def optimize_design(env_name, control_name, num_iter, lr):
     env_utils = utils[env_name]
     Cost, Sim = env_utils['cost'], env_utils['sim']
     cost, sim = Cost(x_target_torch), Sim(design_torch, dt, use_rk4)
-    env = gym.make(f'{env_name}-v0', design=design, x_init=x_init, x_target=x_target, N=N, dt=dt)
+    env = gym.make(f'{env_name}-v0', design=design)
     Control = get_control(control_name)
     optimizer = torch.optim.Adam([design_torch], lr=lr)
 
@@ -111,8 +111,9 @@ if __name__ == '__main__':
 
     # find the optimal design
     best_idx = np.argmin(results['loss'])
-    best_design, best_x_trj, best_u_trj = results['design'][best_idx], results['x_trj'][best_idx], results['u_trj'][best_idx]
+    best_design, best_x_trj, best_u_trj, best_loss = results['design'][best_idx], results['x_trj'][best_idx], results['u_trj'][best_idx], results['loss'][best_idx]
     print(f'best design: {best_design}')
+    print(f'best loss: {best_loss}')
 
     # animate the optimal design
     Animation = env_utils['animate']
