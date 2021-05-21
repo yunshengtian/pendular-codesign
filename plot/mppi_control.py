@@ -47,6 +47,7 @@ else:
 plt.hist(all_cost, bins=20)
 plt.title(f'{args.env} cost distribution (mean: %.2f, std: %.2f)' % (np.mean(all_cost), np.std(all_cost)))
 plt.xlabel('cost')
+plt.tight_layout()
 if args.savefig:
     plt.savefig(f'{args.env}_mppi_control.png')
 plt.show()

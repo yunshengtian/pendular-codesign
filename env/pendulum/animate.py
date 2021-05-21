@@ -7,6 +7,8 @@ class PendulumAnimation(Animation):
 
     def animate_func(self, ax, design, x_trj):
 
+        ax.set_title('pendulum')
+
         line, = ax.plot([], [], c='black')
         m, l = design
 

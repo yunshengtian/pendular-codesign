@@ -30,6 +30,7 @@ final_cost = cost_trace[-1]
 plt.plot(list(range(len(cost_trace))), cost_trace)
 plt.title(f'{args.env} cost (final: %.2f)' % final_cost)
 plt.xlabel('iteration')
+plt.tight_layout()
 if args.savefig:
     plt.savefig(f'{args.env}_ilqr_control.png')
 plt.show()

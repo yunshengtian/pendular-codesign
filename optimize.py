@@ -11,6 +11,7 @@ import env
 from env.config import config
 from env.utils import utils
 from control import get_control
+from tools import save_solution
 
 
 def torch2np(tensor):
@@ -48,7 +49,7 @@ def optimize_design(env_name, control_name, num_iter, lr):
         design = torch2np(design_torch)
         env.sim.set_design(design)
         control = Control(env)
-        _, u_trj, _ = control.solve(u_trj_init=u_trj_last)
+        x_trj, u_trj, _ = control.solve(u_trj_init=u_trj_last)
         u_trj_last = u_trj
 
         # compute differentiable loss
@@ -56,17 +57,17 @@ def optimize_design(env_name, control_name, num_iter, lr):
         u_trj_torch = torch.tensor(u_trj, dtype=torch.float32)
         x_trj_torch = sim.rollout_torch(x_init_torch, u_trj_torch)
         loss_torch = cost.cost_rollout(x_trj_torch, u_trj_torch[:, None])
+
+        # update results
+        results['design'].append(sim.get_design_params(design))
+        results['x_trj'].append(x_trj)
+        results['u_trj'].append(u_trj)
+        results['loss'].append(torch2np(loss_torch))
         
         # optimize design
         optimizer.zero_grad()
         loss_torch.backward(retain_graph=True)
         optimizer.step()
-
-        # update results
-        results['loss'].append(torch2np(loss_torch))
-        results['design'].append(sim.get_design_params(torch2np(design_torch)))
-        results['x_trj'].append(torch2np(x_trj_torch))
-        results['u_trj'].append(u_trj)
 
     for key in results.keys():
         results[key] = np.array(results[key])
@@ -83,6 +84,7 @@ if __name__ == '__main__':
     parser.add_argument('--num-iter', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--savefig', default=False, action='store_true')
+    parser.add_argument('--savesol', default=False, action='store_true')
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
 
@@ -100,6 +102,7 @@ if __name__ == '__main__':
     plt.xlabel('iteration')
     if args.savefig:
         plt.savefig(f'{args.env}_loss.png')
+    plt.tight_layout()
     plt.show()
 
     # plot design curve
@@ -111,8 +114,9 @@ if __name__ == '__main__':
         ax[i].set_title(design_name[i])
         ax[i].set_xlabel('iteration')
     plt.suptitle(f'{args.env} design')
+    plt.tight_layout()
     if args.savefig:
-        plt.savefig(f'{args.env}_design.png')
+        plt.savefig(f'{args.env}_{args.control}_design.png')
     plt.show()
 
     # find the optimal design
@@ -120,6 +124,12 @@ if __name__ == '__main__':
     best_design, best_x_trj, best_u_trj, best_loss = results['design'][best_idx], results['x_trj'][best_idx], results['u_trj'][best_idx], results['loss'][best_idx]
     print(f'best design: {best_design}')
     print(f'best loss: {best_loss}')
+
+    # save the optimal design
+    if args.savesol:
+        initial_design, initial_x_trj, initial_u_trj = results['design'][0], results['x_trj'][0], results['u_trj'][0]
+        save_solution(f'{args.env}_{args.control}_initial.pkl', initial_design, initial_x_trj, initial_u_trj)
+        save_solution(f'{args.env}_{args.control}_final.pkl', best_design, best_x_trj, best_u_trj)
 
     # animate the optimal design
     Animation = env_utils['animate']

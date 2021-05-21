@@ -7,6 +7,8 @@ class AcrobotAnimation(Animation):
 
     def animate_func(self, ax, design, x_trj):
 
+        ax.set_title('acrobot')
+
         line1, = ax.plot([], [], c='black')
         line2, = ax.plot([], [], c='blue')
 
