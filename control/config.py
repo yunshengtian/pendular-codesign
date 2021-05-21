@@ -1,8 +1,8 @@
 config = {
     
     'ilqr': {
-        'max_iter': 1000,
-        'regu_init': 100,
+        'max_iter': 100,
+        'regu_init': 1,
         'u_init_sigma': 0.0001,
     },
 
