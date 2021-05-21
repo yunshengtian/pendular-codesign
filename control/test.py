@@ -1,4 +1,5 @@
 import gym
+import numpy as np
 import matplotlib.pyplot as plt
 from argparse import ArgumentParser
 
@@ -12,8 +13,11 @@ from control import get_control
 parser = ArgumentParser()
 parser.add_argument('--env', type=str, default='pendulum', choices=['acrobot', 'pendulum'])
 parser.add_argument('--control', type=str, default='ilqr', choices=['ilqr', 'mppi'])
+parser.add_argument('--savefig', default=False, action='store_true')
+parser.add_argument('--seed', type=int, default=0)
 args = parser.parse_args()
 
+np.random.seed(args.seed)
 
 env = gym.make(f'{args.env}-v0')
 
@@ -27,7 +31,10 @@ if args.control == 'ilqr':
 
     cost_trace = info['cost_trace']
     plt.plot(list(range(len(cost_trace))), cost_trace)
-    plt.title('Cost')
+    plt.title('cost')
+    plt.xlabel('iteration')
+    if args.savefig:
+        plt.savefig(f'{args.env}_ilqr_test.png')
     plt.show()
 
     final_cost = cost_trace[-1]

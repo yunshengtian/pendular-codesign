@@ -83,7 +83,11 @@ if __name__ == '__main__':
     parser.add_argument('--num-iter', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--savefig', default=False, action='store_true')
+    parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
+
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
 
     results = optimize_design(args.env, args.control, num_iter=args.num_iter, lr=args.lr)
 
@@ -93,6 +97,7 @@ if __name__ == '__main__':
     # plot loss curve
     plt.plot(iteraions, results['loss'])
     plt.title(f'{args.env} loss')
+    plt.xlabel('iteration')
     if args.savefig:
         plt.savefig(f'{args.env}_loss.png')
     plt.show()
@@ -104,6 +109,7 @@ if __name__ == '__main__':
     for i in range(n_design_param):
         ax[i].plot(iteraions, results['design'][:, i])
         ax[i].set_title(design_name[i])
+        ax[i].set_xlabel('iteration')
     plt.suptitle(f'{args.env} design')
     if args.savefig:
         plt.savefig(f'{args.env}_design.png')
