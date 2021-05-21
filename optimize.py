@@ -101,7 +101,7 @@ if __name__ == '__main__':
     plt.title(f'{args.env} loss')
     plt.xlabel('iteration')
     if args.savefig:
-        plt.savefig(f'{args.env}_loss.png')
+        plt.savefig(f'{args.env}_{args.control}_loss.png')
     plt.tight_layout()
     plt.show()
 
