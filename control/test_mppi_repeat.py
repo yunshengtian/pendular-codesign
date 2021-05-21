@@ -45,4 +45,6 @@ else:
         all_cost.append(get_cost(i))
 
 plt.hist(all_cost)
+if args.savefig:
+    plt.savefig(f'{args.env}_mppi_repeat.png')
 plt.show()
