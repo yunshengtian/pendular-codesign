@@ -16,4 +16,4 @@ class PendulumCost(Cost):
     def cost_final(self, x):
         c_theta = (x[0] - self.x_target[0]) ** 2 + self.eps
         c_thetadot = x[1] ** 2
-        return 10 * c_theta + 0.1 * c_thetadot
+        return 10 * c_theta + 1 * c_thetadot
