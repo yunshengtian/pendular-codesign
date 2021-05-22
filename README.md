@@ -1,6 +1,6 @@
 # pendular-codesign
 
-Final project of 6.832
+Design and Control Co-Optimization of Pendular Robots (Final project of MIT 6.832 Underactuated Robotics)
 
 ## Installation
 
