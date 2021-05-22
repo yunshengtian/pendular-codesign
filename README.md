@@ -1,4 +1,6 @@
-# 6.832Final
+# pendular-codesign
+
+Final project of 6.832
 
 ## Installation
 
@@ -6,24 +8,34 @@
 conda env create -f environment.yml
 ```
 
-## Getting Started
+## Control Optimization
 
-#### ILQR
-
-```
-python control/ilqr.py
-```
-
-#### MPPI
+#### Pendulum
 
 ```
-python control/mppi.py
+python control/test.py --env pendulum --control ilqr 
+python control/test.py --env pendulum --control mppi
 ```
 
-#### TD3
+#### Acrobot
 
 ```
-python control/td3/train.py
-python control/td3/eval.py
+python control/test.py --env acrobot --control ilqr 
+python control/test.py --env acrobot --control mppi
+```
+
+## Design Optimization
+
+#### Pendulum
+
+```
+python optimize.py --env pendulum --control ilqr
+python optimize.py --env pendulum --control mppi
+```
+
+#### Acrobot
+
+```
+python optimize.py --env acrobot --control ilqr
 ```
 
