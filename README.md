@@ -39,3 +39,14 @@ python optimize.py --env pendulum --control mppi
 python optimize.py --env acrobot --control ilqr
 ```
 
+
+## Hyperparameters
+
+To reproduce results in the report, please run
+
+```
+python optimize.py --env pendulum --control ilqr --num-iter 30 --lr 3e-2
+python optimize.py --env pendulum --control mppi --num-iter 30 --lr 3e-2
+python optimize.py --env acrobot --control ilqr --num-iter 50 --lr 1e-2
+```
+
